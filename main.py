@@ -1,17 +1,23 @@
-import requests
 import json
-
+import math
+import requests
 
 END_POINT = 'https://example.com'
 VALID_SYMBOLS = ()
+MINIMUM_AMOUNT = {}
+BUDGET = 0
 
 def load_config(filename: str = 'config.json'):
     global END_POINT
     global VALID_SYMBOLS
+    global MINIMUM_AMOUNT
+    global BUDGET
     with open(filename, 'r') as f:
         config = json.load(f)
-        END_POINT = config['endpoint']
-        VALID_SYMBOLS = tuple(config['symbols'])
+    END_POINT = config['endpoint']
+    VALID_SYMBOLS = tuple(config['symbols'])
+    MINIMUM_AMOUNT = {k: float(v) for k,v in config['minamount'].items()}
+    BUDGET = int(config['budget'])
 
 def is_open() -> bool:
     path = '/v1/status'
@@ -63,10 +69,16 @@ def buy(coin: str, num: float):
 
 def main():
     load_config()
+    print(MINIMUM_AMOUNT)
     if is_open():
         print('OPEN!')
         ticker = get_ticker('BTC')
         print(ticker)
+        print(BUDGET)
+        # 予算 (BUDGET) 以内、かつ最小注文単位のN倍となる、最大数量を求める
+        min_amount = MINIMUM_AMOUNT['BTC']
+        amount = math.floor(BUDGET/ticker.ask/min_amount) * min_amount
+        print(amount, ticker.ask * amount)
     else:
         print('Not OPEN...')
 
