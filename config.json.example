@@ -1,0 +1,8 @@
+{
+    "endpoint": "https://api.coin.z.com/public",
+    "symbols": ["BTC", "ETH", "BCH", "LTC", "XRP", "BTC_JPY", "ETH_JPY", "BCH_JPY", "LTC_JPY", "XRP_JPY"],
+    "private": {
+	"apikey": "xxx",
+	"secretkey": "xxx"
+    }
+}
