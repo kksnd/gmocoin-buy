@@ -1,23 +1,45 @@
 import json
 import math
+import os
 import requests
+import sys
 
 END_POINT = 'https://example.com'
 VALID_SYMBOLS = ()
 MINIMUM_AMOUNT = {}
 BUDGET = 0
+API_KEY = ''
+API_SECRET = ''
 
 def load_config(filename: str = 'config.json'):
     global END_POINT
     global VALID_SYMBOLS
     global MINIMUM_AMOUNT
     global BUDGET
-    with open(filename, 'r') as f:
-        config = json.load(f)
-    END_POINT = config['endpoint']
-    VALID_SYMBOLS = tuple(config['symbols'])
-    MINIMUM_AMOUNT = {k: float(v) for k,v in config['minamount'].items()}
-    BUDGET = int(config['budget'])
+    try:
+        with open(filename, 'r') as f:
+            config = json.load(f)
+    except:
+        print('Error while loading the json config file')
+        sys.exit()
+    try:
+        END_POINT = config['endpoint']
+        VALID_SYMBOLS = tuple(config['symbols'])
+        MINIMUM_AMOUNT = {k: float(v) for k,v in config['minamount'].items()}
+        BUDGET = int(config['budget'])
+    except LookupError as e:
+        print(f'{e} was not defined in the config file')
+        sys.exit()
+
+def load_env():
+    global API_KEY
+    global API_SECRET
+    try:
+        API_KEY = os.environ['GMOCOIN_API_KEY']
+        API_SECRET = os.environ['GMOCOIN_API_SECRET']
+    except LookupError as e:
+        print(f'Environmental variable {e} was not defined')
+        sys.exit()
 
 def is_open() -> bool:
     path = '/v1/status'
@@ -26,7 +48,7 @@ def is_open() -> bool:
         response.raise_for_status()
     except requests.exceptions.RequestException as e:
         print(e)
-        exit
+        sys.exit()
     resp_json = response.json()
     print(resp_json)
     return resp_json['status'] == 0 and resp_json['data']['status'] == 'OPEN'
@@ -50,14 +72,14 @@ class Ticker:
 def get_ticker(coin: str) -> Ticker:
     if coin not in VALID_SYMBOLS:
         print('invalid coin symbol')
-        exit
+        sys.exit()
     path = f'/v1/ticker?symbol={coin}'
     try:
         response = requests.get(END_POINT + path)
         response.raise_for_status()
     except requests.exceptions.RequestException as e:
         print(e)
-        exit
+        sys.exit()
     resp_json = response.json()
     print(resp_json)
     if resp_json['status'] == 0:
@@ -69,7 +91,7 @@ def buy(coin: str, num: float):
 
 def main():
     load_config()
-    print(MINIMUM_AMOUNT)
+    load_env()
     if is_open():
         print('OPEN!')
         ticker = get_ticker('BTC')
