@@ -1,6 +1,11 @@
 {
-    "endpoint": "https://api.coin.z.com/public",
-    "symbols": ["BTC", "ETH", "BCH", "LTC", "XRP"],
-    "minamount": {"BTC": "0.0001", "ETH": "0.01", "BCH": "0.01", "LTC": "0.1", "XRP": "1"},
-    "budget": "5000"
+    "setting": {
+        "endpoint": "https://api.coin.z.com/public",
+        "symbols": ["BTC", "ETH", "BCH", "LTC", "XRP"],
+        "minamount": {"BTC": "0.0001", "ETH": "0.01", "BCH": "0.01", "LTC": "0.1", "XRP": "1"}
+    },
+    "order": {
+        "targetcoin": "BTC",
+        "budget": "5000"
+    }
 }
