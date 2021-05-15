@@ -7,6 +7,7 @@ import requests
 import sys
 import time
 from datetime import datetime
+from decimal import Decimal, ROUND_HALF_UP
 
 # config
 #  - setting
@@ -36,7 +37,7 @@ def load_config(filename: str = 'config.json') -> None:
     try:
         ENDPOINT = config['setting']['endpoint']
         VALID_SYMBOLS = set((config['setting']['symbols']))
-        MINIMUM_AMOUNT = {k: float(v) for k,v in config['setting']['minamount'].items()}
+        MINIMUM_AMOUNT = config['setting']['minamount']
         TARGETSYMBOL = config['order']['targetsymbol']
         BUDGET = int(config['order']['budget'])
     except LookupError as e:
@@ -125,28 +126,56 @@ def get_balance() -> dict:
             balances[s] = data['available']
     return balances
 
-def buy(coin: str, num: float) -> None:
-    return
+def buy_market(symbol: str, amount: str) -> None:
+    timestamp = '{0}000'.format(int(time.mktime(datetime.now().timetuple())))
+    method    = 'POST'
+    endpoint  = f'{ENDPOINT}/private'
+    path      = '/v1/order'
+    reqBody = {
+        "symbol": symbol,
+        "side": "BUY",
+        "executionType": "MARKET",
+        "size": amount
+    }
+
+    text = timestamp + method + path + json.dumps(reqBody)
+    sign = hmac.new(bytes(API_SECRET.encode('ascii')), bytes(text.encode('ascii')), hashlib.sha256).hexdigest()
+
+    headers = {
+        "API-KEY": API_KEY,
+        "API-TIMESTAMP": timestamp,
+        "API-SIGN": sign
+    }
+
+    print('buy request!!!!!!!!!!!')
+    #response = requests.post(endpoint + path, headers=headers, data=json.dumps(reqBody))
+    #resp_json = response.json()
+    #print (json.dumps(resp_json, indent=2))
 
 def main():
     load_config()
     load_env()
     if is_open():
         print('OPEN!')
-        print('\n### get_ticker ###')
+        print('\n### Get ticker ###')
         ticker = get_ticker(TARGETSYMBOL)
-        print(f'Current price {ticker.ask}')
+        print(f'  => Current ask price = {ticker.ask}')
 
-        print('\n### get_balance ###')
+        print('\n### Get balance ###')
         balance_dict = get_balance()
         print(balance_dict)
+        print(f'  => You have {balance_dict["JPY"]} JPY')
 
-        print('\n### calculate amount ###')
-        print(BUDGET)
+        print('\n### Calculate amount ###')
+        print(f'Budget: {BUDGET}')
         # 予算 (BUDGET) 以内、かつ最小注文単位のN倍となる、最大数量を求める
         min_amount = MINIMUM_AMOUNT[TARGETSYMBOL]
-        amount = math.floor(BUDGET/ticker.ask/min_amount) * min_amount
-        print(amount, ticker.ask * amount)
+        amount = str(math.floor(BUDGET/ticker.ask/float(min_amount)) * float(min_amount))
+        str_amount = str(Decimal(amount).quantize(Decimal(min_amount), rounding=ROUND_HALF_UP))
+        print(f'  => You will buy {str_amount} {TARGETSYMBOL} (= {int(ticker.ask * float(amount))} JPY)')
+
+        print('\n### Buy ###')
+        buy_market(TARGETSYMBOL, str_amount)
     else:
         print('Not OPEN...')
 
