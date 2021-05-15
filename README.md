@@ -21,10 +21,13 @@ $ cp config.json.example config.json
 
 次に、`config.json`を編集する
 
-* endpoint: エンドポイントのURL
-* symbols: 使う取引所で有効な通貨コードのリスト
-* minamount: 最低取引単位
-* budget: 1回の注文で買う金額 (円)
+* setting
+  * endpoint: エンドポイントのURL
+  * symbols: 取引所で有効な通貨コードのリスト
+  * minamount: 各銘柄の最低取引単位
+* order
+  * targetsymbol: 購入する銘柄の通貨コード
+  * budget: 1回の注文で支払う金額の上限 (円)
 
 ### 環境変数
 APIキーとAPIシークレットをexportする
