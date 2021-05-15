@@ -44,6 +44,7 @@ def load_config(filename: str = 'config.json') -> None:
         print(f'{e} was not defined in the config file')
         sys.exit()
 
+
 def load_env() -> None:
     global API_KEY
     global API_SECRET
@@ -53,6 +54,7 @@ def load_env() -> None:
     except LookupError as e:
         print(f'Environmental variable {e} was not defined')
         sys.exit()
+
 
 def is_open() -> bool:
     endpoint = f'{ENDPOINT}/public'
@@ -100,6 +102,9 @@ def get_ticker(symbol: str) -> Ticker:
     if resp_json['status'] == 0:
         data = {s: float(resp_json['data'][0][s]) for s in Ticker.elements}
         return Ticker(data['ask'], data['bid'], data['high'], data['low'], data['last'])
+    print(f'error, response status_code = {resp_json["status"]}')
+    sys.exit()
+
 
 def get_balance() -> dict:
     timestamp = '{0}000'.format(int(time.mktime(datetime.now().timetuple())))
@@ -116,17 +121,27 @@ def get_balance() -> dict:
         "API-SIGN": sign
     }
 
-    response = requests.get(endpoint + path, headers=headers)
-    resp_json = response.json()
-    
-    balances = {}
-    for data in resp_json['data']:
-        s = data['symbol']
-        if s == 'JPY' or s in VALID_SYMBOLS:
-            balances[s] = data['available']
-    return balances
+    try:
+        response = requests.get(endpoint + path, headers=headers)
+        response.raise_for_status()
+    except requests.exceptions.RequestException as e:
+        print(e)
+        print('request error in get_balance()')
+        sys.exit()
 
-def buy_market(symbol: str, amount: str) -> None:
+    resp_json = response.json()
+    if resp_json['status'] == 0:
+        balances = {}
+        for data in resp_json['data']:
+            s = data['symbol']
+            if s == 'JPY' or s in VALID_SYMBOLS:
+                balances[s] = data['available']
+        return balances
+    print(f'error, response status_code = {resp_json["status"]}')
+    sys.exit()
+
+
+def buy_market(symbol: str, amount: str) -> str:
     timestamp = '{0}000'.format(int(time.mktime(datetime.now().timetuple())))
     method    = 'POST'
     endpoint  = f'{ENDPOINT}/private'
@@ -148,9 +163,20 @@ def buy_market(symbol: str, amount: str) -> None:
     }
 
     print('buy request!!!!!!!!!!!')
-    #response = requests.post(endpoint + path, headers=headers, data=json.dumps(reqBody))
-    #resp_json = response.json()
-    #print (json.dumps(resp_json, indent=2))
+    try:
+        response = requests.post(endpoint + path, headers=headers, data=json.dumps(reqBody))
+        response.raise_for_status()
+    except requests.exceptions.RequestException as e:
+        print(e)
+        print('request error in buy_market()')
+        sys.exit()
+
+    resp_json = response.json()
+    print (json.dumps(resp_json, indent=2))
+    if resp_json['status'] == 0:
+        return resp_json['data']
+    print(f'error, response status_code = {resp_json["status"]}')
+    sys.exit()
 
 def main():
     load_config()
@@ -175,7 +201,8 @@ def main():
         print(f'  => You will buy {str_amount} {TARGETSYMBOL} (= {int(ticker.ask * float(amount))} JPY)')
 
         print('\n### Buy ###')
-        buy_market(TARGETSYMBOL, str_amount)
+        order_id = buy_market(TARGETSYMBOL, str_amount)
+        print(f'order_id: {order_id}')
     else:
         print('Not OPEN...')
 
