@@ -10,8 +10,7 @@ from datetime import datetime
 
 # config
 #  - setting
-ENDPOINT_PUB = 'https://example.com'
-ENDPOINT_PRV = 'https://example.com'
+ENDPOINT = 'https://example.com'
 VALID_SYMBOLS = set()
 MINIMUM_AMOUNT = {}
 #  - order
@@ -23,8 +22,7 @@ API_KEY = ''
 API_SECRET = ''
 
 def load_config(filename: str = 'config.json') -> None:
-    global ENDPOINT_PUB
-    global ENDPOINT_PRV
+    global ENDPOINT
     global VALID_SYMBOLS
     global MINIMUM_AMOUNT
     global TARGETSYMBOL
@@ -36,8 +34,7 @@ def load_config(filename: str = 'config.json') -> None:
         print('Error while loading the json config file')
         sys.exit()
     try:
-        ENDPOINT_PUB = config['setting']['endpoint']['public']
-        ENDPOINT_PRV = config['setting']['endpoint']['private']
+        ENDPOINT = config['setting']['endpoint']
         VALID_SYMBOLS = set((config['setting']['symbols']))
         MINIMUM_AMOUNT = {k: float(v) for k,v in config['setting']['minamount'].items()}
         TARGETSYMBOL = config['order']['targetsymbol']
@@ -57,9 +54,10 @@ def load_env() -> None:
         sys.exit()
 
 def is_open() -> bool:
+    endpoint = f'{ENDPOINT}/public'
     path = '/v1/status'
     try:
-        response  = requests.get(ENDPOINT_PUB + path)
+        response  = requests.get(endpoint + path)
         response.raise_for_status()
     except requests.exceptions.RequestException as e:
         print(e)
@@ -88,9 +86,10 @@ def get_ticker(symbol: str) -> Ticker:
     if symbol not in VALID_SYMBOLS:
         print('invalid coin symbol')
         sys.exit()
-    path = f'/v1/ticker?symbol={symbol}'
+    endpoint = f'{ENDPOINT}/public'
+    path     = f'/v1/ticker?symbol={symbol}'
     try:
-        response = requests.get(ENDPOINT_PUB + path)
+        response = requests.get(endpoint + path)
         response.raise_for_status()
     except requests.exceptions.RequestException as e:
         print(e)
@@ -104,6 +103,7 @@ def get_ticker(symbol: str) -> Ticker:
 def get_balance() -> dict:
     timestamp = '{0}000'.format(int(time.mktime(datetime.now().timetuple())))
     method    = 'GET'
+    endpoint = f'{ENDPOINT}/private'
     path      = '/v1/account/assets'
 
     text = timestamp + method + path
@@ -115,7 +115,7 @@ def get_balance() -> dict:
         "API-SIGN": sign
     }
 
-    response = requests.get(ENDPOINT_PRV + path, headers=headers)
+    response = requests.get(endpoint + path, headers=headers)
     resp_json = response.json()
     
     balances = {}
