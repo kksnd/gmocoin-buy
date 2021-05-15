@@ -15,7 +15,7 @@ ENDPOINT_PRV = 'https://example.com'
 VALID_SYMBOLS = set()
 MINIMUM_AMOUNT = {}
 #  - order
-TARGETCOIN = ''
+TARGETSYMBOL = ''
 BUDGET = 0
 
 # environmental variable
@@ -27,7 +27,7 @@ def load_config(filename: str = 'config.json') -> None:
     global ENDPOINT_PRV
     global VALID_SYMBOLS
     global MINIMUM_AMOUNT
-    global TARGETCOIN
+    global TARGETSYMBOL
     global BUDGET
     try:
         with open(filename, 'r') as f:
@@ -40,7 +40,7 @@ def load_config(filename: str = 'config.json') -> None:
         ENDPOINT_PRV = config['setting']['endpoint']['private']
         VALID_SYMBOLS = set((config['setting']['symbols']))
         MINIMUM_AMOUNT = {k: float(v) for k,v in config['setting']['minamount'].items()}
-        TARGETCOIN = config['order']['targetcoin']
+        TARGETSYMBOL = config['order']['targetsymbol']
         BUDGET = int(config['order']['budget'])
     except LookupError as e:
         print(f'{e} was not defined in the config file')
@@ -84,11 +84,11 @@ class Ticker:
     def __str__(self) -> str:
         return str({'ask': self.ask, 'bid': self.bid, 'high': self.high, 'low': self.low, 'last': self.last})
 
-def get_ticker(coin: str) -> Ticker:
-    if coin not in VALID_SYMBOLS:
+def get_ticker(symbol: str) -> Ticker:
+    if symbol not in VALID_SYMBOLS:
         print('invalid coin symbol')
         sys.exit()
-    path = f'/v1/ticker?symbol={coin}'
+    path = f'/v1/ticker?symbol={symbol}'
     try:
         response = requests.get(ENDPOINT_PUB + path)
         response.raise_for_status()
@@ -117,7 +117,6 @@ def get_balance() -> dict:
 
     response = requests.get(ENDPOINT_PRV + path, headers=headers)
     resp_json = response.json()
-    #print (json.dumps(resp_json, indent=2))
     
     balances = {}
     for data in resp_json['data']:
@@ -135,7 +134,7 @@ def main():
     if is_open():
         print('OPEN!')
         print('\n### get_ticker ###')
-        ticker = get_ticker(TARGETCOIN)
+        ticker = get_ticker(TARGETSYMBOL)
         print(f'Current price {ticker.ask}')
 
         print('\n### get_balance ###')
@@ -145,7 +144,7 @@ def main():
         print('\n### calculate amount ###')
         print(BUDGET)
         # 予算 (BUDGET) 以内、かつ最小注文単位のN倍となる、最大数量を求める
-        min_amount = MINIMUM_AMOUNT[TARGETCOIN]
+        min_amount = MINIMUM_AMOUNT[TARGETSYMBOL]
         amount = math.floor(BUDGET/ticker.ask/min_amount) * min_amount
         print(amount, ticker.ask * amount)
     else:
