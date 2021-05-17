@@ -195,10 +195,14 @@ def main():
         print('\n### Calculate amount ###')
         print(f'Budget: {BUDGET}')
         # 予算 (BUDGET) 以内、かつ最小注文単位のN倍となる、最大数量を求める
-        min_amount = MINIMUM_AMOUNT[TARGETSYMBOL]
-        amount = str(math.floor(BUDGET/ticker.ask/float(min_amount)) * float(min_amount))
-        str_amount = str(Decimal(amount).quantize(Decimal(min_amount), rounding=ROUND_HALF_UP))
-        print(f'  => You will buy {str_amount} {TARGETSYMBOL} (= {int(ticker.ask * float(amount))} JPY)')
+        min_amount = MINIMUM_AMOUNT[TARGETSYMBOL]  #str
+        amount = math.floor(BUDGET/ticker.ask/float(min_amount)) * float(min_amount)  #float
+        # 予算が足りないなら買わない
+        if amount < float(min_amount):
+            print(f'  => Your budget is not enough...skip at this time')
+            sys.exit()
+        str_amount = str(Decimal(str(amount)).quantize(Decimal(min_amount), rounding=ROUND_HALF_UP))  #str
+        print(f'  => You will buy {str_amount} {TARGETSYMBOL} (= {int(ticker.ask * amount)} JPY)')
 
         print('\n### Buy ###')
         order_id = buy_market(TARGETSYMBOL, str_amount)
